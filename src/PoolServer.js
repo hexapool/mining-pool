@@ -174,7 +174,11 @@ Pool address: ${poolServer.config.address}
                 // Some proxy services append their own IP to the end of the header value,
                 // but we only need the origin IP, so we take the first IP of the potential list
                 const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
-                netAddress = Nimiq.NetAddress.fromIP(ip);
+                try {
+                    netAddress = Nimiq.NetAddress.fromIP(ip);
+                } catch(e) {
+                    Nimiq.Log.d(`Could not read IP from x-forwarded-for header: ${ip}`);
+                }
             }
 
             if (this._isIpBanned(netAddress)) {
