@@ -215,7 +215,7 @@ class PoolAgent extends Nimiq.Observable {
     async _isNanoShareValid(block, hash) {
         // Check if the share was already submitted
         if (await this._pool.containsShare(this._userId, hash)) {
-            throw new Error('Client submitted share twice');
+            return 'share submitted twice';
         }
 
         // Check if the body hash is the one we've sent
@@ -245,7 +245,7 @@ class PoolAgent extends Nimiq.Observable {
         }
 
         if (!(await block.isImmediateSuccessorOf(this._prevBlock))) {
-            return 'bad prev';
+            return 'bad previous block';
         }
 
         return null;
@@ -309,7 +309,7 @@ class PoolAgent extends Nimiq.Observable {
     async _isSmartShareValid(header, hash, minerAddrProof, extraDataProof, fullBlock) {
         // Check if the share was already submitted
         if (await this._pool.containsShare(this._userId, hash)) {
-            throw new Error('Client submitted share twice');
+            return 'share submitted twice';
         }
 
         // Check if we are the _miner or the share
