@@ -139,9 +139,9 @@ class PoolAgent extends Nimiq.Observable {
             case PoolAgent.MODE_SMART:
                 this.mode = PoolAgent.Mode.SMART;
                 break;
-            case PoolAgent.MODE_NANO:
-                this.mode = PoolAgent.Mode.NANO;
-                break;
+            // case PoolAgent.MODE_NANO:
+            //     this.mode = PoolAgent.Mode.NANO;
+            //     break;
             default:
                 throw new Error('Client did not specify mode');
         }

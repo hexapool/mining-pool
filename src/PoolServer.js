@@ -3,6 +3,7 @@ const https = require('https');
 const WebSocket = require('uws');
 const mysql = require('mysql2/promise');
 const fs = require('fs');
+const amqp = require('amqplib');
 
 const PoolAgent = require('./PoolAgent.js');
 const Helper = require('./Helper.js');
@@ -34,6 +35,12 @@ class PoolServer extends Nimiq.Observable {
 
         /** @type {number} */
         this.port = port;
+
+        /** @type: {string} */
+        this._brokerHost = config.brokerHost;
+
+        /** @type: {string} */
+        this._queueName = config.queueName;
 
         /** @type {string} */
         this._mySqlPsw = mySqlPsw;
@@ -98,10 +105,23 @@ class PoolServer extends Nimiq.Observable {
             database: 'pool'
         });
 
+        this._shareQueue = await startQueue(this._brokerHost, this._queueName);
+
         this._wss = PoolServer.createServer(this.port, this._sslKeyPath, this._sslCertPath);
         this._wss.on('connection', (ws, req) => this._onConnection(ws, req));
 
         this.consensus.blockchain.on('head-changed', (head) => this._announceHeadToNano(head));
+    }
+
+    static async startQueue(brokerHost, q) {
+        return amqp.connect(brokerHost)
+        .then((connection) => { 
+            return connection.createChannel() 
+        })
+        .then((channel) => { 
+            channel.assertQueue(q);
+            return channel; 
+        });
     }
 
     static createServer(port, sslKeyPath, sslCertPath) {
@@ -280,6 +300,10 @@ class PoolServer extends Nimiq.Observable {
         const query = "INSERT INTO share (user, device, datetime, prev_block, difficulty, hash) VALUES (?, ?, ?, ?, ?, ?)";
         const queryArgs = [userId, deviceId, Date.now(), prevHashId, difficulty, shareHash.serialize()];
         await this.connectionPool.execute(query, queryArgs);
+    }
+
+    pushToQueue(msg, queue, queueChannel) {
+        queueChannel.sendToQueue(queue, Buffer.from(msg));
     }
 
     /**
