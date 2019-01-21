@@ -105,7 +105,9 @@ class PoolServer extends Nimiq.Observable {
             database: 'pool'
         });
 
-        this._shareQueue = await startQueue(this._brokerHost, this._queueName);
+        this._shareQueue = await PoolServer.startQueue(this._brokerHost, this._queueName);
+
+        //this.pushToQueue(Buffer.from(`{ msg: "Hello World" }`), this._queueName, this._shareQueue);
 
         this._wss = PoolServer.createServer(this.port, this._sslKeyPath, this._sslCertPath);
         this._wss.on('connection', (ws, req) => this._onConnection(ws, req));
@@ -120,7 +122,10 @@ class PoolServer extends Nimiq.Observable {
         })
         .then((channel) => { 
             channel.assertQueue(q);
+            Nimiq.Log.i(PoolServer, "RabbiqMQ client started successfully");
             return channel; 
+        }).catch((error) => {
+            Nimiq.Log.e(PoolServer, "RabbiqMQ client failed to start");
         });
     }
 
@@ -302,8 +307,8 @@ class PoolServer extends Nimiq.Observable {
         await this.connectionPool.execute(query, queryArgs);
     }
 
-    pushToQueue(msg, queue, queueChannel) {
-        queueChannel.sendToQueue(queue, Buffer.from(msg));
+    pushToQueue(msg, q, queueChannel) {
+        return queueChannel.sendToQueue(q, Buffer.from(msg));
     }
 
     /**
