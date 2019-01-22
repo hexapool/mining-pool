@@ -40,13 +40,13 @@ for (const seedPeer of config.seedPeers) {
 }
 
 (async () => {
-    const networkConfig = config.dumb
-        ? new Nimiq.DumbNetworkConfig()
-        : new Nimiq.WsNetworkConfig(config.host, config.port, config.tls.key, config.tls.cert);
+    // const networkConfig = config.dumb
+    //     ? new Nimiq.DumbNetworkConfig()
+    //     : new Nimiq.WsNetworkConfig(config.host, config.port, config.tls.key, config.tls.cert);
 
     switch (config.type) {
         case 'full':
-            $.consensus = await Nimiq.Consensus.full(networkConfig);
+            // $.consensus = await Nimiq.Consensus.light(networkConfig);
             break;
         case 'light':
             $.consensus = await Nimiq.Consensus.light(networkConfig);
@@ -56,28 +56,28 @@ for (const seedPeer of config.seedPeers) {
             break;
     }
 
-    $.blockchain = $.consensus.blockchain;
-    $.accounts = $.blockchain.accounts;
-    $.mempool = $.consensus.mempool;
-    $.network = $.consensus.network;
+    // $.blockchain = $.consensus.blockchain;
+    // $.accounts = $.blockchain.accounts;
+    // $.mempool = $.consensus.mempool;
+    // $.network = $.consensus.network;
 
-    Nimiq.Log.i(TAG, `Peer address: ${networkConfig.peerAddress.toString()} - public key: ${networkConfig.keyPair.publicKey.toHex()}`);
+    // Nimiq.Log.i(TAG, `Peer address: ${networkConfig.peerAddress.toString()} - public key: ${networkConfig.keyPair.publicKey.toHex()}`);
 
-    // TODO: Wallet key.
-    $.walletStore = await new Nimiq.WalletStore();
-    if (!config.wallet.seed) {
-        // Load or create default wallet.
-        $.wallet = await $.walletStore.getDefault();
-    } else if (config.wallet.seed) {
-        // Load wallet from seed.
-        const mainWallet = await Nimiq.Wallet.loadPlain(config.wallet.seed);
-        await $.walletStore.put(mainWallet);
-        await $.walletStore.setDefault(mainWallet.address);
-        $.wallet = mainWallet;
-    }
+    // // TODO: Wallet key.
+    // $.walletStore = await new Nimiq.WalletStore();
+    // if (!config.wallet.seed) {
+    //     // Load or create default wallet.
+    //     $.wallet = await $.walletStore.getDefault();
+    // } else if (config.wallet.seed) {
+    //     // Load wallet from seed.
+    //     const mainWallet = await Nimiq.Wallet.loadPlain(config.wallet.seed);
+    //     await $.walletStore.put(mainWallet);
+    //     await $.walletStore.setDefault(mainWallet.address);
+    //     $.wallet = mainWallet;
+    // }
 
     if (config.poolServer.enabled) {
-        const poolServer = new PoolServer($.consensus, config.pool, config.poolServer.port, config.poolServer.mySqlPsw, config.poolServer.mySqlHost, config.poolServer.sslKeyPath, config.poolServer.sslCertPath);
+        const poolServer = new PoolServer(config.pool, config.poolServer.port, config.poolServer.mySqlPsw, config.poolServer.mySqlHost, config.poolServer.sslKeyPath, config.poolServer.sslCertPath);
 
         if (config.poolMetricsServer.enabled) {
             $.metricsServer = new MetricsServer(config.poolServer.sslKeyPath, config.poolServer.sslCertPath, config.poolMetricsServer.port, config.poolMetricsServer.password);
@@ -104,32 +104,32 @@ for (const seedPeer of config.seedPeers) {
         poolPayout.start();
     }
 
-    const addresses = await $.walletStore.list();
-    Nimiq.Log.i(TAG, `Managing wallets [${addresses.map(address => address.toUserFriendlyAddress())}]`);
+    // const addresses = await $.walletStore.list();
+    Nimiq.Log.i(TAG, `Managing wallets [${config.pool.address}]`);
 
-    const isNano = config.type === 'nano';
-    const account = !isNano ? await $.accounts.get($.wallet.address) : null;
-    Nimiq.Log.i(TAG, `Wallet initialized for address ${$.wallet.address.toUserFriendlyAddress()}.`
-        + (!isNano ? ` Balance: ${Nimiq.Policy.satoshisToCoins(account.balance)} NIM` : ''));
+    // const isNano = config.type === 'nano';
+    // const account = !isNano ? await $.accounts.get($.wallet.address) : null;
+    // Nimiq.Log.i(TAG, `Wallet initialized for address ${$.wallet.address.toUserFriendlyAddress()}.`
+    //     + (!isNano ? ` Balance: ${Nimiq.Policy.satoshisToCoins(account.balance)} NIM` : ''));
 
-    Nimiq.Log.i(TAG, `Blockchain state: height=${$.blockchain.height}, headHash=${$.blockchain.headHash}`);
+    // Nimiq.Log.i(TAG, `Blockchain state: height=${$.blockchain.height}, headHash=${$.blockchain.headHash}`);
 
-    $.blockchain.on('head-changed', (head) => {
-        if ($.consensus.established || head.height % 100 === 0) {
-            Nimiq.Log.i(TAG, `Now at block: ${head.height}`);
-        }
-    });
+    // $.blockchain.on('head-changed', (head) => {
+    //     if ($.consensus.established || head.height % 100 === 0) {
+    //         Nimiq.Log.i(TAG, `Now at block: ${head.height}`);
+    //     }
+    // });
 
-    $.network.on('peer-joined', (peer) => {
-        Nimiq.Log.i(TAG, `Connected to ${peer.peerAddress.toString()}`);
-    });
+    // $.network.on('peer-joined', (peer) => {
+    //     Nimiq.Log.i(TAG, `Connected to ${peer.peerAddress.toString()}`);
+    // });
 
-    $.consensus.on('established', () => {
-        Nimiq.Log.i(TAG, `Blockchain ${config.type}-consensus established in ${(Date.now() - START) / 1000}s.`);
-        Nimiq.Log.i(TAG, `Current state: height=${$.blockchain.height}, totalWork=${$.blockchain.totalWork}, headHash=${$.blockchain.headHash}`);
-    });
+    // $.consensus.on('established', () => {
+    //     Nimiq.Log.i(TAG, `Blockchain ${config.type}-consensus established in ${(Date.now() - START) / 1000}s.`);
+    //     Nimiq.Log.i(TAG, `Current state: height=${$.blockchain.height}, totalWork=${$.blockchain.totalWork}, headHash=${$.blockchain.headHash}`);
+    // });
 
-    $.network.connect();
+    // $.network.connect();
 })().catch(e => {
     console.error(e);
     process.exit(1);

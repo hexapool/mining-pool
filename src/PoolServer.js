@@ -18,11 +18,11 @@ class PoolServer extends Nimiq.Observable {
      * @param {string} sslKeyPath
      * @param {string} sslCertPath
      */
-    constructor(consensus, config, port, mySqlPsw, mySqlHost, sslKeyPath, sslCertPath) {
+    constructor(config, port, mySqlPsw, mySqlHost, sslKeyPath, sslCertPath) {
         super();
 
-        /** @type {Nimiq.FullConsensus} */
-        this._consensus = consensus;
+        // /** @type {Nimiq.FullConsensus} */
+        // this._consensus = consensus;
 
         /** @type {string} */
         this.name = config.name;
@@ -54,8 +54,8 @@ class PoolServer extends Nimiq.Observable {
         /** @type {string} */
         this._sslCertPath = sslCertPath;
 
-        /** @type {Nimiq.Miner} */
-        this._miner = new Nimiq.Miner(consensus.blockchain, consensus.blockchain.accounts, consensus.mempool, consensus.network.time, this.poolAddress);
+        // /** @type {Nimiq.Miner} */
+        // this._miner = new Nimiq.Miner(consensus.blockchain, consensus.blockchain.accounts, consensus.mempool, consensus.network.time, this.poolAddress);
 
         /** @type {Set.<PoolAgent>} */
         this._agents = new Set();
@@ -86,16 +86,18 @@ class PoolServer extends Nimiq.Observable {
 
         setInterval(() => this._checkUnbanIps(), PoolServer.UNBAN_IPS_INTERVAL);
 
-        setInterval(() => this._calculateHashrate(), PoolServer.HASHRATE_INTERVAL);
+        // setInterval(() => this._calculateHashrate(), PoolServer.HASHRATE_INTERVAL);
 
-        this.consensus.on('established', () => this.start());
+        // this.consensus.on('established', () => 
+        this.start()
+        // );
     }
 
     async start() {
         if (this._started) return;
         this._started = true;
 
-        this._currentLightHead = this.consensus.blockchain.head.toLight();
+        // this._currentLightHead = this.consensus.blockchain.head.toLight();
         await this._updateTransactions();
 
         this.connectionPool = await mysql.createPool({
@@ -112,7 +114,7 @@ class PoolServer extends Nimiq.Observable {
         this._wss = PoolServer.createServer(this.port, this._sslKeyPath, this._sslCertPath);
         this._wss.on('connection', (ws, req) => this._onConnection(ws, req));
 
-        this.consensus.blockchain.on('head-changed', (head) => this._announceHeadToNano(head));
+        // this.consensus.blockchain.on('head-changed', (head) => this._announceHeadToNano(head));
     }
 
     static async startQueue(brokerHost, q) {
@@ -122,10 +124,10 @@ class PoolServer extends Nimiq.Observable {
         })
         .then((channel) => { 
             channel.assertQueue(q);
-            Nimiq.Log.i(PoolServer, "RabbiqMQ client started successfully");
+            Nimiq.Log.i(PoolServer, "RabbitMQ client started successfully");
             return channel; 
         }).catch((error) => {
-            Nimiq.Log.e(PoolServer, "RabbiqMQ client failed to start");
+            Nimiq.Log.e(PoolServer, "RabbitMQ client failed to start");
         });
     }
 

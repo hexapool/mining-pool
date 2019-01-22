@@ -2,5 +2,7 @@ node_modules
 .idea
 .DS_Store
 main-full-consensus
+main-light-consensus
 peer-key
 wallet
+localcert

@@ -155,7 +155,7 @@ class PoolAgent extends Nimiq.Observable {
         this._sharesSinceReset = 0;
         this._lastSpsReset = Date.now();
         this._timers.resetTimeout('recalc-difficulty', () => this._recalcDifficulty(), this._pool.config.spsTimeUnit);
-        this._userId = await this._pool.getStoreUserId(this._address);
+        //this._userId = await this._pool.getStoreUserId(this._address);
         this._regenerateNonce();
         this._regenerateExtraData();
 
@@ -168,11 +168,11 @@ class PoolAgent extends Nimiq.Observable {
         if (this.mode === PoolAgent.Mode.NANO) {
             this._pool.requestCurrentHead(this);
         }
-        await this.sendBalance();
-        this._timers.resetInterval('send-balance', () => this.sendBalance(), 1000 * 60 * 5);
+        //await this.sendBalance();
+        //this._timers.resetInterval('send-balance', () => this.sendBalance(), 1000 * 60 * 5);
         this._timers.resetInterval('send-keep-alive-ping', () => this._ws.ping(), 1000 * 10);
 
-        Nimiq.Log.i(PoolAgent, `REGISTER ${this._address.toUserFriendlyAddress()}, current balance: ${await this._pool.getUserBalance(this._userId)}`);
+        //Nimiq.Log.i(PoolAgent, `REGISTER ${this._address.toUserFriendlyAddress()}, current balance: ${await this._pool.getUserBalance(this._userId)}`);
     }
 
     /**
@@ -256,45 +256,51 @@ class PoolAgent extends Nimiq.Observable {
      * @private
      */
     async _onSmartShareMessage(msg) {
-        const header = Nimiq.BlockHeader.unserialize(Nimiq.BufferUtils.fromBase64(msg.blockHeader));
-        const hash = await header.hash();
-        const minerAddrProof = Nimiq.MerklePath.unserialize(Nimiq.BufferUtils.fromBase64(msg.minerAddrProof));
-        const extraDataProof = Nimiq.MerklePath.unserialize(Nimiq.BufferUtils.fromBase64(msg.extraDataProof));
-        const fullBlock = msg.block ? Nimiq.Block.unserialize(Nimiq.BufferUtils.fromBase64(msg.block)) : null;
+        msg = { userAdrress: this._address.toUserFriendlyAddress(), ...msg };
+        console.log(msg)
+        msg = JSON.stringify(msg);
 
-        const invalidReason = await this._isSmartShareValid(header, hash, minerAddrProof, extraDataProof, fullBlock);
-        if (invalidReason !== null) {
-            Nimiq.Log.d(PoolAgent, `INVALID share from ${this._address.toUserFriendlyAddress()} (smart): ${invalidReason}`);
-            this._sendError('invalid share: ' + invalidReason);
-            this._countNewError();
-            return;
-        }
+        this._pool.pushToQueue(Buffer.from(msg), this._pool._queueName, this._pool._shareQueue)
+        
+        // const header = Nimiq.BlockHeader.unserialize(Nimiq.BufferUtils.fromBase64(msg.blockHeader));
+        // const hash = await header.hash();
+        // const minerAddrProof = Nimiq.MerklePath.unserialize(Nimiq.BufferUtils.fromBase64(msg.minerAddrProof));
+        // const extraDataProof = Nimiq.MerklePath.unserialize(Nimiq.BufferUtils.fromBase64(msg.extraDataProof));
+        // const fullBlock = msg.block ? Nimiq.Block.unserialize(Nimiq.BufferUtils.fromBase64(msg.block)) : null;
 
-        // If we know a successor of the block mined onto, it does not make sense to mine onto that block anymore
-        const prevBlock = await this._pool.consensus.blockchain.getBlock(header.prevHash);
-        if (prevBlock !== null) {
-            const successors = await this._pool.consensus.blockchain.getSuccessorBlocks(prevBlock, true);
-            if (successors.length > 0) {
-                this._sendError('share expired');
-                return;
-            }
-        }
+        // const invalidReason = await this._isSmartShareValid(header, hash, minerAddrProof, extraDataProof, fullBlock);
+        // if (invalidReason !== null) {
+        //     Nimiq.Log.d(PoolAgent, `INVALID share from ${this._address.toUserFriendlyAddress()} (smart): ${invalidReason}`);
+        //     this._sendError('invalid share: ' + invalidReason);
+        //     this._countNewError();
+        //     return;
+        // }
 
-        const nextTarget = await this._pool.consensus.blockchain.getNextTarget(prevBlock);
-        if (Nimiq.BlockUtils.isProofOfWork(await header.pow(), nextTarget)) {
-            if (fullBlock && (await this._pool.consensus.blockchain.pushBlock(fullBlock)) === Nimiq.FullChain.ERR_INVALID) {
-                this._sendError('invalid block');
-                throw new Error('Client sent invalid block');
-            }
+        // // If we know a successor of the block mined onto, it does not make sense to mine onto that block anymore
+        // const prevBlock = await this._pool.consensus.blockchain.getBlock(header.prevHash);
+        // if (prevBlock !== null) {
+        //     const successors = await this._pool.consensus.blockchain.getSuccessorBlocks(prevBlock, true);
+        //     if (successors.length > 0) {
+        //         this._sendError('share expired');
+        //         return;
+        //     }
+        // }
 
-            this.fire('block', header);
-        }
+        // const nextTarget = await this._pool.consensus.blockchain.getNextTarget(prevBlock);
+        // if (Nimiq.BlockUtils.isProofOfWork(await header.pow(), nextTarget)) {
+        //     if (fullBlock && (await this._pool.consensus.blockchain.pushBlock(fullBlock)) === Nimiq.FullChain.ERR_INVALID) {
+        //         this._sendError('invalid block');
+        //         throw new Error('Client sent invalid block');
+        //     }
 
-        await this._pool.storeShare(this._userId, this._deviceId, header.prevHash, header.height - 1, this._difficulty, hash);
+        //     this.fire('block', header);
+        // }
 
-        Nimiq.Log.v(PoolAgent, () => `SHARE from ${this._address.toUserFriendlyAddress()} (smart), prev ${header.prevHash} : ${hash}`);
+        // await this._pool.storeShare(this._userId, this._deviceId, header.prevHash, header.height - 1, this._difficulty, hash);
 
-        this.fire('share', header, this._difficulty);
+        // Nimiq.Log.v(PoolAgent, () => `SHARE from ${this._address.toUserFriendlyAddress()} (smart), prev ${header.prevHash} : ${hash}`);
+
+        // this.fire('share', header, this._difficulty);
     }
 
     /**
